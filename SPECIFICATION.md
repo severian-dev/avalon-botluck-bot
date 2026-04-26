@@ -36,6 +36,7 @@ Only one active botluck per guild (`primed` or `running`) is allowed; enforced b
 - Slot names: letters, digits, underscores; must start with a letter; case-insensitive uniqueness.
 - All other characters in the template (newlines, brackets, parens, plain text) round-trip to the final assembled output verbatim.
 - Each slot has two states: **announced** (the bot has prompted it) and **filled** (someone claimed it).
+- An optional `theme` (set on the prime modal alongside the template) is shown on the spring announcement and every "next slot" prompt as a reminder of the overall vibe.
 
 ### Slot timing
 
@@ -120,6 +121,7 @@ One row per botluck. The active row (if any) is the one with `state IN ('primed'
 | `announcement_message_id` | TEXT NULL | message id of the spring announcement |
 | `completed_at` | TEXT NULL | |
 | `cancelled_at` | TEXT NULL | |
+| `theme` | TEXT NULL | optional theme provided at prime time; shown on the spring + slot announcements |
 
 ### `botluck_slots`
 One row per slot per botluck.

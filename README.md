@@ -53,7 +53,9 @@ Set with `/setup`. Run `/setup` with no options to view the current config.
 
 ## Template syntax
 
-Whatever you paste in the prime modal is preserved verbatim — newlines, brackets, parens, prose, all of it — except for `{slotname}` markers, which become the slots users fill. Slot names must start with a letter and use only letters, digits, and underscores. Each name must appear once.
+The prime modal has two fields: a **template** (required) and a **theme** (optional, free text — shown on the spring and slot announcements as a reminder of the overall vibe).
+
+Whatever you paste in the template is preserved verbatim — newlines, brackets, parens, prose, all of it — except for `{slotname}` markers, which become the slots users fill. Slot names must start with a letter and use only letters, digits, and underscores. Each name must appear once.
 
 Example template:
 

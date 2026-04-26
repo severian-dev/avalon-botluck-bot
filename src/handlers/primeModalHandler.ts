@@ -4,7 +4,11 @@ import * as botluckService from '../services/botluckService.js';
 import { BotluckError } from '../services/botluckService.js';
 import { TemplateParseError } from '../services/templateService.js';
 import { isAdmin } from '../services/permissionService.js';
-import { PRIME_MODAL, PRIME_MODAL_TEMPLATE } from '../types/customIds.js';
+import {
+  PRIME_MODAL,
+  PRIME_MODAL_TEMPLATE,
+  PRIME_MODAL_THEME,
+} from '../types/customIds.js';
 
 export async function handle(
   interaction: ModalSubmitInteraction,
@@ -21,9 +25,17 @@ export async function handle(
   }
 
   const raw = interaction.fields.getTextInputValue(PRIME_MODAL_TEMPLATE);
+  const themeRaw = interaction.fields.getTextInputValue(PRIME_MODAL_THEME);
+  const theme = themeRaw.trim().length > 0 ? themeRaw.trim() : null;
 
   try {
-    const botluck = botluckService.prime(db, interaction.guildId, interaction.user.id, raw);
+    const botluck = botluckService.prime(
+      db,
+      interaction.guildId,
+      interaction.user.id,
+      raw,
+      theme,
+    );
     const slots = JSON.parse(botluck.slots_json) as string[];
     const springAt = new Date(botluck.spring_at);
     const unix = Math.floor(springAt.getTime() / 1000);

@@ -27,7 +27,8 @@ export function runMigrations(db: Database.Database): void {
       next_announce_at         TEXT,
       announcement_message_id  TEXT,
       completed_at             TEXT,
-      cancelled_at             TEXT
+      cancelled_at             TEXT,
+      theme                    TEXT
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS uq_botlucks_active_per_guild
@@ -61,4 +62,18 @@ export function runMigrations(db: Database.Database): void {
       PRIMARY KEY (botluck_id, slot_index, user_id)
     );
   `);
+
+  ensureColumn(db, 'botlucks', 'theme', 'TEXT');
+}
+
+function ensureColumn(
+  db: Database.Database,
+  table: string,
+  column: string,
+  type: string,
+): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }

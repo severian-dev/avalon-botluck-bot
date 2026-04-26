@@ -28,6 +28,7 @@ export function prime(
   guildId: string,
   primedBy: string,
   rawTemplate: string,
+  theme: string | null = null,
 ): BotluckRow {
   const cfg = guildConfigRepo.get(db, guildId);
   if (!cfg.spawn_channel_id) {
@@ -58,6 +59,7 @@ export function prime(
     resultChannelId: cfg.result_channel_id ?? cfg.spawn_channel_id,
     primedBy,
     springAt,
+    theme,
   });
 }
 

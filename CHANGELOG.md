@@ -16,3 +16,9 @@ All notable changes to this project will be documented in this file. Format foll
 - Scheduler tick (5s) — springs primed botlucks at `spring_at`, announces the next slot 15–30s after each fill.
 - Template parser preserves all surrounding text (newlines, brackets, parens, prose) and validates slot names.
 - `/test-spring` (owner-only) — springs the currently primed botluck immediately, bypassing the spring delay. For testing only.
+- Optional `theme` field on the prime modal — shown on the spring announcement and on every "next slot" prompt as a reminder.
+- Spring announcement now mentions that the assembled result will become a character card.
+
+### Changed
+
+- Slot-fill announcement now shows the value the user submitted, not just who filled the slot.

@@ -46,7 +46,7 @@ async function runAnnounceTick(client: Client, db: Database.Database): Promise<v
       const plan = botluckService.announceNextPlan(db, row.id);
       if (!plan) continue;
       await sendToChannel(client, plan.botluck.spawn_channel_id, {
-        embeds: [buildSlotAnnouncement(plan.slot)],
+        embeds: [buildSlotAnnouncement(plan.slot, plan.botluck.theme)],
       });
       botluckService.commitAnnounce(db, plan.botluck.id, plan.slot.slot_index);
     } catch (err) {
