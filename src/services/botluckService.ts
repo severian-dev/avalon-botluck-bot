@@ -317,6 +317,43 @@ export function cancel(db: Database.Database, guildId: string): BotluckRow {
   return botluck;
 }
 
+export interface ReminderPlan {
+  botluck: BotluckRow;
+  openSlots: SlotRow[];
+}
+
+/** Returns botlucks where a reminder should fire right now, plus the open slots to nudge about. */
+export function planRemindersDue(db: Database.Database, now: Date): ReminderPlan[] {
+  const out: ReminderPlan[] = [];
+  const running = botluckRepo.listRunning(db);
+  for (const botluck of running) {
+    const cfg = guildConfigRepo.get(db, botluck.guild_id);
+    const thresholdMs = cfg.reminder_after_seconds * 1000;
+    if (thresholdMs <= 0) continue;
+
+    const openSlots = slotRepo.listOpen(db, botluck.id);
+    if (openSlots.length === 0) continue;
+
+    const sprungAt = botluck.sprung_at ? new Date(botluck.sprung_at).getTime() : 0;
+    const lastFillIso = slotRepo.lastFillAt(db, botluck.id);
+    const lastFillMs = lastFillIso ? new Date(lastFillIso).getTime() : 0;
+    const lastReminderMs = botluck.last_reminder_at
+      ? new Date(botluck.last_reminder_at).getTime()
+      : 0;
+    const lastChannelMs = botluck.last_channel_message_at
+      ? new Date(botluck.last_channel_message_at).getTime()
+      : 0;
+
+    const referenceMs = Math.max(sprungAt, lastFillMs, lastReminderMs);
+    if (now.getTime() - referenceMs < thresholdMs) continue;
+    // Channel must have seen a non-bot message after the last progress/reminder.
+    if (lastChannelMs <= referenceMs) continue;
+
+    out.push({ botluck, openSlots });
+  }
+  return out;
+}
+
 export interface BotluckSnapshot {
   botluck: BotluckRow;
   slots: SlotRow[];

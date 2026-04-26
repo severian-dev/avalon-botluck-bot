@@ -3,6 +3,7 @@ import type { BotClient } from '../client.js';
 import type { BotEnv } from '../config/schema.js';
 import * as ready from './ready.js';
 import * as interactionCreate from './interactionCreate.js';
+import * as messageCreate from './messageCreate.js';
 
 interface EventModule {
   name: string;
@@ -11,7 +12,7 @@ interface EventModule {
   execute: (...args: any[]) => void | Promise<void>;
 }
 
-const events: EventModule[] = [ready, interactionCreate];
+const events: EventModule[] = [ready, interactionCreate, messageCreate];
 
 export function registerEvents(client: BotClient, db: Database.Database, env: BotEnv): void {
   for (const event of events) {

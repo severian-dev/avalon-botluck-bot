@@ -55,6 +55,23 @@ export function buildFillAnnouncement(slot: SlotRow, fillerId: string): EmbedBui
     );
 }
 
+export function buildReminder(openSlots: SlotRow[], theme: string | null): EmbedBuilder {
+  const names = openSlots.map((s) => `\`${s.slot_name}\``).join(', ');
+  const lead = openSlots[0];
+  const lines: string[] = [];
+  if (theme) lines.push(`🎨 **Theme:** ${theme}`, '');
+  lines.push(
+    openSlots.length === 1
+      ? `Still waiting on ${names} — first to claim wins.`
+      : `Still waiting on ${names} — first to claim each wins.`,
+    codeBlock(`/fill slot:${lead.slot_name} value:"…"`),
+  );
+  return new EmbedBuilder()
+    .setColor(COLOR_RUNNING)
+    .setTitle('⏰ Anyone? Anyone?')
+    .setDescription(lines.join('\n'));
+}
+
 export function buildCompletionAnnouncement(): EmbedBuilder {
   return new EmbedBuilder()
     .setColor(COLOR_COMPLETE)

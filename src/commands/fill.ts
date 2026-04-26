@@ -11,6 +11,7 @@ import {
   buildFillAnnouncement,
 } from '../builders/embeds.js';
 import { sendToChannel } from '../services/channelService.js';
+import { refreshPresence } from '../services/presenceService.js';
 
 export const data = new SlashCommandBuilder()
   .setName('fill')
@@ -59,5 +60,6 @@ export async function execute(
     await sendToChannel(interaction.client, result.botluck.result_channel_id, {
       content: buildAssembled(result.assembledText),
     });
+    refreshPresence(interaction.client, db);
   }
 }

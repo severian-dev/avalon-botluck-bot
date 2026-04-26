@@ -49,6 +49,14 @@ export const data = new SlashCommandBuilder()
       .setMaxValue(3600)
       .setRequired(false),
   )
+  .addIntegerOption((o) =>
+    o
+      .setName('reminder_after_seconds')
+      .setDescription('Reminder threshold when no slot has been filled (default 300; 0 disables)')
+      .setMinValue(0)
+      .setMaxValue(86400)
+      .setRequired(false),
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
   .setDMPermission(false);
 
@@ -94,15 +102,26 @@ export async function execute(
     updates.push(`slot_gap_max_seconds = ${gapMax}`);
   }
 
+  const reminderAfter = interaction.options.getInteger('reminder_after_seconds');
+  if (reminderAfter !== null) {
+    guildConfigRepo.set(db, interaction.guildId, 'reminder_after_seconds', reminderAfter);
+    updates.push(`reminder_after_seconds = ${reminderAfter}`);
+  }
+
   if (updates.length === 0) {
     const cfg = guildConfigRepo.get(db, interaction.guildId);
+    const reminderLine =
+      cfg.reminder_after_seconds === 0
+        ? '_disabled_'
+        : `${cfg.reminder_after_seconds}s after last fill if channel is active`;
     await interaction.reply({
       content:
         '**Current configuration**\n' +
         `• spawn channel: ${cfg.spawn_channel_id ? `<#${cfg.spawn_channel_id}>` : '_unset_'}\n` +
         `• result channel: ${cfg.result_channel_id ? `<#${cfg.result_channel_id}>` : '_falls back to spawn_'}\n` +
         `• spring delay: ${cfg.spring_delay_hours}h\n` +
-        `• slot gap: ${cfg.slot_gap_min_seconds}–${cfg.slot_gap_max_seconds}s\n\n` +
+        `• slot gap: ${cfg.slot_gap_min_seconds}–${cfg.slot_gap_max_seconds}s\n` +
+        `• reminder: ${reminderLine}\n\n` +
         'Pass options to update.',
       ephemeral: true,
       allowedMentions: { parse: [] },

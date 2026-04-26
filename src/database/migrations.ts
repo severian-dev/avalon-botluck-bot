@@ -3,12 +3,13 @@ import type Database from 'better-sqlite3';
 export function runMigrations(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS guild_config (
-      guild_id              TEXT PRIMARY KEY,
-      spawn_channel_id      TEXT,
-      result_channel_id     TEXT,
-      spring_delay_hours    INTEGER NOT NULL DEFAULT 24,
-      slot_gap_min_seconds  INTEGER NOT NULL DEFAULT 15,
-      slot_gap_max_seconds  INTEGER NOT NULL DEFAULT 30
+      guild_id                TEXT PRIMARY KEY,
+      spawn_channel_id        TEXT,
+      result_channel_id       TEXT,
+      spring_delay_hours      INTEGER NOT NULL DEFAULT 24,
+      slot_gap_min_seconds    INTEGER NOT NULL DEFAULT 15,
+      slot_gap_max_seconds    INTEGER NOT NULL DEFAULT 30,
+      reminder_after_seconds  INTEGER NOT NULL DEFAULT 300
     );
 
     CREATE TABLE IF NOT EXISTS botlucks (
@@ -28,7 +29,9 @@ export function runMigrations(db: Database.Database): void {
       announcement_message_id  TEXT,
       completed_at             TEXT,
       cancelled_at             TEXT,
-      theme                    TEXT
+      theme                    TEXT,
+      last_reminder_at         TEXT,
+      last_channel_message_at  TEXT
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS uq_botlucks_active_per_guild
@@ -64,6 +67,9 @@ export function runMigrations(db: Database.Database): void {
   `);
 
   ensureColumn(db, 'botlucks', 'theme', 'TEXT');
+  ensureColumn(db, 'botlucks', 'last_reminder_at', 'TEXT');
+  ensureColumn(db, 'botlucks', 'last_channel_message_at', 'TEXT');
+  ensureColumn(db, 'guild_config', 'reminder_after_seconds', 'INTEGER NOT NULL DEFAULT 300');
 }
 
 function ensureColumn(

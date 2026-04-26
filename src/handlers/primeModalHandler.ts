@@ -4,6 +4,7 @@ import * as botluckService from '../services/botluckService.js';
 import { BotluckError } from '../services/botluckService.js';
 import { TemplateParseError } from '../services/templateService.js';
 import { isAdmin } from '../services/permissionService.js';
+import { refreshPresence } from '../services/presenceService.js';
 import {
   PRIME_MODAL,
   PRIME_MODAL_TEMPLATE,
@@ -46,6 +47,7 @@ export async function handle(
       ephemeral: true,
       allowedMentions: { parse: [] },
     });
+    refreshPresence(interaction.client, db);
   } catch (err) {
     if (err instanceof TemplateParseError) {
       await interaction.reply({ content: `⚠️ Template error: ${err.message}`, ephemeral: true });

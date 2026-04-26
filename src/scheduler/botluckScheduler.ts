@@ -4,10 +4,11 @@ import * as botluckRepo from '../database/repositories/botluckRepo.js';
 import * as botluckService from '../services/botluckService.js';
 import { sendToChannel } from '../services/channelService.js';
 import {
+  buildReminder,
   buildSlotAnnouncement,
   buildSpringAnnouncement,
 } from '../builders/embeds.js';
-
+import { refreshPresence } from '../services/presenceService.js';
 const TICK_SECONDS = 5;
 
 export async function performSpring(
@@ -25,6 +26,7 @@ export async function performSpring(
     return false;
   }
   botluckService.commitSpring(db, botluckId, messageId);
+  refreshPresence(client, db);
   return true;
 }
 
@@ -55,11 +57,27 @@ async function runAnnounceTick(client: Client, db: Database.Database): Promise<v
   }
 }
 
+async function runReminderTick(client: Client, db: Database.Database): Promise<void> {
+  const now = new Date();
+  const plans = botluckService.planRemindersDue(db, now);
+  for (const plan of plans) {
+    try {
+      const sent = await sendToChannel(client, plan.botluck.spawn_channel_id, {
+        embeds: [buildReminder(plan.openSlots, plan.botluck.theme)],
+      });
+      if (sent) botluckRepo.stampReminder(db, plan.botluck.id, now);
+    } catch (err) {
+      console.error(`Reminder tick error for botluck ${plan.botluck.id}:`, err);
+    }
+  }
+}
+
 export function startBotluckScheduler(client: Client, db: Database.Database): NodeJS.Timeout {
   const tick = async () => {
     try {
       await runSpringTick(client, db);
       await runAnnounceTick(client, db);
+      await runReminderTick(client, db);
     } catch (err) {
       console.error('botluck tick error:', err);
     }

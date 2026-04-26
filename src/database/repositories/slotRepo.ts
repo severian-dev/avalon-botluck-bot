@@ -103,3 +103,22 @@ export function countFilled(db: Database.Database, botluckId: number): number {
     .get(botluckId);
   return row?.count ?? 0;
 }
+
+export function listOpen(db: Database.Database, botluckId: number): SlotRow[] {
+  return db
+    .prepare<[number], SlotRow>(
+      `SELECT * FROM botluck_slots
+       WHERE botluck_id = ? AND announced_at IS NOT NULL AND filled_by IS NULL
+       ORDER BY slot_index ASC`,
+    )
+    .all(botluckId);
+}
+
+export function lastFillAt(db: Database.Database, botluckId: number): string | null {
+  const row = db
+    .prepare<[number], { at: string | null }>(
+      `SELECT MAX(filled_at) AS at FROM botluck_slots WHERE botluck_id = ?`,
+    )
+    .get(botluckId);
+  return row?.at ?? null;
+}

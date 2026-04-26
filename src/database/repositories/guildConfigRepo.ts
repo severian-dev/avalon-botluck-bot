@@ -7,6 +7,7 @@ export interface GuildConfigRow {
   spring_delay_hours: number;
   slot_gap_min_seconds: number;
   slot_gap_max_seconds: number;
+  reminder_after_seconds: number;
 }
 
 export const ALLOWED_KEYS = [
@@ -15,6 +16,7 @@ export const ALLOWED_KEYS = [
   'spring_delay_hours',
   'slot_gap_min_seconds',
   'slot_gap_max_seconds',
+  'reminder_after_seconds',
 ] as const;
 
 export type ConfigKey = (typeof ALLOWED_KEYS)[number];

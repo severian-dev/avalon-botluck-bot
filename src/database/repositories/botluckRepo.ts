@@ -20,6 +20,8 @@ export interface BotluckRow {
   completed_at: string | null;
   cancelled_at: string | null;
   theme: string | null;
+  last_reminder_at: string | null;
+  last_channel_message_at: string | null;
 }
 
 export interface CreateBotluckInput {
@@ -145,4 +147,36 @@ export function markCancelled(db: Database.Database, id: number): void {
          next_announce_at = NULL
      WHERE id = ?`,
   ).run(id);
+}
+
+export function findRunningBySpawnChannel(
+  db: Database.Database,
+  guildId: string,
+  channelId: string,
+): BotluckRow | null {
+  return (
+    db
+      .prepare<[string, string], BotluckRow>(
+        `SELECT * FROM botlucks
+         WHERE guild_id = ? AND state = 'running' AND spawn_channel_id = ?`,
+      )
+      .get(guildId, channelId) ?? null
+  );
+}
+
+export function stampChannelActivity(db: Database.Database, id: number, at: Date): void {
+  db.prepare(`UPDATE botlucks SET last_channel_message_at = ? WHERE id = ?`).run(
+    at.toISOString(),
+    id,
+  );
+}
+
+export function stampReminder(db: Database.Database, id: number, at: Date): void {
+  db.prepare(`UPDATE botlucks SET last_reminder_at = ? WHERE id = ?`).run(at.toISOString(), id);
+}
+
+export function listRunning(db: Database.Database): BotluckRow[] {
+  return db
+    .prepare<[], BotluckRow>(`SELECT * FROM botlucks WHERE state = 'running'`)
+    .all();
 }

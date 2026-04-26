@@ -81,6 +81,7 @@ Stored in `guild_config`:
 | `spring_delay_hours` | `24` | hours between `/prime` and the spring |
 | `slot_gap_min_seconds` | `15` | minimum gap between slot prompts |
 | `slot_gap_max_seconds` | `30` | maximum gap between slot prompts |
+| `reminder_after_seconds` | `300` | when an announced slot has been open this long since the last progress AND the channel had non-bot activity, the bot posts a reminder. `0` disables. |
 
 All set via `/setup`. Calling `/setup` with no options shows the current configuration.
 

@@ -14,7 +14,7 @@ export interface BotClient extends Client {
 
 export function createClient(): BotClient {
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   }) as BotClient;
 
   client.commands = new Collection();

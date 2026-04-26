@@ -9,6 +9,7 @@ import * as botluckService from '../services/botluckService.js';
 import { BotluckError } from '../services/botluckService.js';
 import { buildCancellation } from '../builders/embeds.js';
 import { sendToChannel } from '../services/channelService.js';
+import { refreshPresence } from '../services/presenceService.js';
 
 export const data = new SlashCommandBuilder()
   .setName('cancel')
@@ -44,4 +45,6 @@ export async function execute(
       embeds: [buildCancellation()],
     });
   }
+
+  refreshPresence(interaction.client, db);
 }

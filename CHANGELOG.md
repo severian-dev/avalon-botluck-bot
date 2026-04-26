@@ -22,3 +22,5 @@ All notable changes to this project will be documented in this file. Format foll
 ### Changed
 
 - Slot-fill announcement now shows the value the user submitted, not just who filled the slot.
+- Bot now reminds the channel when no slot has been filled for 5 minutes (configurable via `reminder_after_seconds`) and the channel has had non-bot activity since the last progress. Set to `0` to disable.
+- Bot's Discord presence reflects state: green "Playing /prime to start a botluck" when idle, idle "Watching 🥣 primed — waiting to spring" when primed, green "Playing 🍲 a botluck (slots open)" when running.
