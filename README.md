@@ -86,6 +86,7 @@ DATABASE_PATH=  # optional; defaults to ./avalon-botluck.db
 - `npm run build` — compile with tsup
 - `npm start` — run compiled output
 - `npm run deploy-commands` — register slash commands
+- `npm run reset-db` — delete the SQLite database (and WAL sidecars). Stop the bot first; next start recreates the schema. Honours `DATABASE_PATH`.
 - `npm run typecheck` — type-check without emit
 
 See `SPECIFICATION.md` for the full feature spec and data model.
