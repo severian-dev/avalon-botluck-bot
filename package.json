@@ -1,0 +1,34 @@
+{
+  "name": "avalon-botluck-bot",
+  "version": "0.1.0",
+  "description": "Discord bot that springs a fill-in-the-blanks 'botluck' on a designated channel after priming. Users race to /fill each slot in turn; once complete, the assembled text posts to a result channel.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsup",
+    "start": "node --env-file=.env dist/index.js",
+    "deploy-commands": "tsx --env-file=.env src/deploy-commands.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/tests/**/*.test.ts"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "botluck",
+    "avalon"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "discord.js": "^14.25.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.0.10",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
