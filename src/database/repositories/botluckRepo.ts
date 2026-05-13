@@ -167,6 +167,17 @@ export function findRunningBySpawnChannel(
   );
 }
 
+export function setChannels(
+  db: Database.Database,
+  id: number,
+  spawnChannelId: string,
+  resultChannelId: string,
+): void {
+  db.prepare(
+    `UPDATE botlucks SET spawn_channel_id = ?, result_channel_id = ? WHERE id = ?`,
+  ).run(spawnChannelId, resultChannelId, id);
+}
+
 export function stampChannelActivity(db: Database.Database, id: number, at: Date): void {
   db.prepare(`UPDATE botlucks SET last_channel_message_at = ? WHERE id = ?`).run(
     at.toISOString(),

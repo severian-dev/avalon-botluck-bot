@@ -52,6 +52,7 @@ Users **reply** to the bot's slot-prompt messages to submit — there is no `/fi
 | `/revoke slot` | admin | reopen a filled slot; the original filler is banned from re-taking it |
 | `/cancel` | admin | abort the active botluck |
 | `/view` | admin | post a public list of every slot, its submitter, and its value (the blind-reveal tool) |
+| `/reannounce` | admin | re-post the prompt for every open slot (also picks up channel changes from `/setup`); use after deleting the bot's prompt message or moving the spawn channel mid-botluck |
 | `/status` | anyone | show the current state (ephemeral; respects blind mode) |
 | `/test-spring` | owner | spring the primed botluck immediately, bypassing the delay (testing only) |
 

@@ -43,3 +43,4 @@ All notable changes to this project will be documented in this file. Format foll
 - **Blind botluck mode.** Optional toggle on the prime modal (type `yes` to enable). When on, the channel parrot only acknowledges "@user filled `slot`" without showing the value, and `/status` hides values too. `/view` and the final assembled card always reveal values.
 - **`/view` admin command.** Posts publicly in the current channel a list of every slot with its filler and submitted value, including for blind botlucks. The intended reveal mechanism.
 - **`admin_role` config** in `/setup`. A role that's treated as admin alongside `Manage Guild` for all admin commands (`/setup`, `/prime`, `/revoke`, `/cancel`, `/view`).
+- **`/reannounce` admin command.** Re-posts the prompt for every currently-open slot. Also picks up any spawn/result channel change made via `/setup` since prime time. Use this if you deleted the bot's slot prompt or changed the spawn channel mid-botluck.
