@@ -3,13 +3,14 @@ import type Database from 'better-sqlite3';
 export function runMigrations(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS guild_config (
-      guild_id                TEXT PRIMARY KEY,
-      spawn_channel_id        TEXT,
-      result_channel_id       TEXT,
-      spring_delay_hours      INTEGER NOT NULL DEFAULT 24,
-      slot_gap_min_seconds    INTEGER NOT NULL DEFAULT 15,
-      slot_gap_max_seconds    INTEGER NOT NULL DEFAULT 30,
-      reminder_after_seconds  INTEGER NOT NULL DEFAULT 300
+      guild_id                    TEXT PRIMARY KEY,
+      spawn_channel_id            TEXT,
+      result_channel_id           TEXT,
+      spring_delay_hours          INTEGER NOT NULL DEFAULT 24,
+      slot_gap_min_seconds        INTEGER NOT NULL DEFAULT 15,
+      slot_gap_max_seconds        INTEGER NOT NULL DEFAULT 30,
+      reminder_after_seconds      INTEGER NOT NULL DEFAULT 300,
+      submission_cooldown_hours   INTEGER NOT NULL DEFAULT 6
     );
 
     CREATE TABLE IF NOT EXISTS botlucks (
@@ -44,15 +45,19 @@ export function runMigrations(db: Database.Database): void {
       ON botlucks(state, next_announce_at);
 
     CREATE TABLE IF NOT EXISTS botluck_slots (
-      botluck_id  INTEGER NOT NULL REFERENCES botlucks(id) ON DELETE CASCADE,
-      slot_index  INTEGER NOT NULL,
-      slot_name   TEXT NOT NULL,
-      announced_at TEXT,
-      filled_by   TEXT,
-      value       TEXT,
-      filled_at   TEXT,
+      botluck_id              INTEGER NOT NULL REFERENCES botlucks(id) ON DELETE CASCADE,
+      slot_index              INTEGER NOT NULL,
+      slot_name               TEXT NOT NULL,
+      announced_at            TEXT,
+      announcement_message_id TEXT,
+      filled_by               TEXT,
+      value                   TEXT,
+      filled_at               TEXT,
       PRIMARY KEY (botluck_id, slot_index)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_botluck_slots_announcement_msg
+      ON botluck_slots(announcement_message_id) WHERE announcement_message_id IS NOT NULL;
 
     CREATE INDEX IF NOT EXISTS idx_botluck_slots_name
       ON botluck_slots(botluck_id, slot_name);
@@ -70,6 +75,12 @@ export function runMigrations(db: Database.Database): void {
   ensureColumn(db, 'botlucks', 'last_reminder_at', 'TEXT');
   ensureColumn(db, 'botlucks', 'last_channel_message_at', 'TEXT');
   ensureColumn(db, 'guild_config', 'reminder_after_seconds', 'INTEGER NOT NULL DEFAULT 300');
+  ensureColumn(db, 'guild_config', 'submission_cooldown_hours', 'INTEGER NOT NULL DEFAULT 6');
+  ensureColumn(db, 'botluck_slots', 'announcement_message_id', 'TEXT');
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_botluck_slots_announcement_msg
+       ON botluck_slots(announcement_message_id) WHERE announcement_message_id IS NOT NULL`,
+  );
 }
 
 function ensureColumn(

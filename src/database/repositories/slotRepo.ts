@@ -5,6 +5,7 @@ export interface SlotRow {
   slot_index: number;
   slot_name: string;
   announced_at: string | null;
+  announcement_message_id: string | null;
   filled_by: string | null;
   value: string | null;
   filled_at: string | null;
@@ -46,20 +47,6 @@ export function getByIndex(
   );
 }
 
-export function findFillerInBotluck(
-  db: Database.Database,
-  botluckId: number,
-  userId: string,
-): SlotRow | null {
-  return (
-    db
-      .prepare<[number, string], SlotRow>(
-        `SELECT * FROM botluck_slots WHERE botluck_id = ? AND filled_by = ?`,
-      )
-      .get(botluckId, userId) ?? null
-  );
-}
-
 export function markAnnounced(
   db: Database.Database,
   botluckId: number,
@@ -68,6 +55,51 @@ export function markAnnounced(
   db.prepare(
     `UPDATE botluck_slots SET announced_at = datetime('now') WHERE botluck_id = ? AND slot_index = ?`,
   ).run(botluckId, slotIndex);
+}
+
+export function setAnnouncementMessageId(
+  db: Database.Database,
+  botluckId: number,
+  slotIndex: number,
+  messageId: string,
+): void {
+  db.prepare(
+    `UPDATE botluck_slots SET announcement_message_id = ? WHERE botluck_id = ? AND slot_index = ?`,
+  ).run(messageId, botluckId, slotIndex);
+}
+
+export interface SlotWithBotluckId extends SlotRow {
+  guild_id: string;
+}
+
+export function findOpenByMessageRef(
+  db: Database.Database,
+  messageId: string,
+): SlotWithBotluckId | null {
+  return (
+    db
+      .prepare<[string], SlotWithBotluckId>(
+        `SELECT s.*, b.guild_id AS guild_id FROM botluck_slots s
+           JOIN botlucks b ON b.id = s.botluck_id
+          WHERE s.announcement_message_id = ?
+            AND s.filled_by IS NULL
+            AND b.state = 'running'`,
+      )
+      .get(messageId) ?? null
+  );
+}
+
+export function lastFillForUserInBotluck(
+  db: Database.Database,
+  botluckId: number,
+  userId: string,
+): string | null {
+  const row = db
+    .prepare<[number, string], { at: string | null }>(
+      `SELECT MAX(filled_at) AS at FROM botluck_slots WHERE botluck_id = ? AND filled_by = ?`,
+    )
+    .get(botluckId, userId);
+  return row?.at ?? null;
 }
 
 export function fillIfOpen(

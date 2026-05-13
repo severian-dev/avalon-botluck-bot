@@ -47,15 +47,18 @@ Only one active botluck per guild (`primed` or `running`) is allowed; enforced b
 
 ### Fill rules
 
-`/fill slot:<name> value:"<text>"` succeeds when:
+Users submit by **replying to the bot's slot-prompt message** in the spawn channel. The reply's text becomes the slot value. There is no slash command for filling.
 
-1. There is a `running` botluck in the guild.
-2. The slot exists and has been announced.
-3. The slot is currently empty.
-4. The user is not banned from this slot (set by a prior `/revoke` against them).
-5. The user has not already filled another slot in this botluck.
+A reply is accepted when:
 
-Fills are atomic: a `WHERE filled_by IS NULL` clause makes simultaneous `/fill` calls on the same open slot deterministic (one wins).
+1. The reply's referenced message id matches an open slot in a `running` botluck.
+2. The user is not banned from this slot (set by a prior `/revoke` against them).
+3. The user has not made another submission in this botluck within `submission_cooldown_hours` (default 6).
+4. The reply has non-empty content of ≤500 characters.
+
+All other replies are silently ignored — no error reply, no reaction. The atomic claim uses a `WHERE filled_by IS NULL` clause, so simultaneous replies to the same slot resolve cleanly (one wins; the loser is silently ignored too).
+
+To accept reply content, the bot needs the **MESSAGE_CONTENT** privileged gateway intent enabled in the Developer Portal.
 
 ### Revoke rules
 
@@ -82,6 +85,7 @@ Stored in `guild_config`:
 | `slot_gap_min_seconds` | `15` | minimum gap between slot prompts |
 | `slot_gap_max_seconds` | `30` | maximum gap between slot prompts |
 | `reminder_after_seconds` | `300` | when an announced slot has been open this long since the last progress AND the channel had non-bot activity, the bot posts a reminder. `0` disables. |
+| `submission_cooldown_hours` | `6` | minimum hours between any two submissions by the same user in a botluck. `0` disables. |
 
 All set via `/setup`. Calling `/setup` with no options shows the current configuration.
 
@@ -91,10 +95,11 @@ All set via `/setup`. Calling `/setup` with no options shows the current configu
 |---------|-----|---------|
 | `/setup` | admin | configure channels and timing |
 | `/prime` | admin | open the modal to paste a template; stores it and schedules the spring |
-| `/fill slot value` | anyone | claim an announced, empty slot |
 | `/revoke slot` | admin | reopen a filled slot, banning the original filler from it |
 | `/cancel` | admin | abort the active botluck |
 | `/status` | anyone | show the current botluck state (ephemeral) |
+
+There is no `/fill` command. Users submit by **replying** to the bot's slot-prompt messages in the spawn channel.
 
 ## Data model
 
@@ -133,6 +138,7 @@ One row per slot per botluck.
 | `slot_index` | INTEGER |
 | `slot_name` | TEXT |
 | `announced_at` | TEXT NULL |
+| `announcement_message_id` | TEXT NULL — message id of the bot's slot prompt; used to match replies |
 | `filled_by` | TEXT NULL — user id |
 | `value` | TEXT NULL |
 | `filled_at` | TEXT NULL |

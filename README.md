@@ -18,6 +18,8 @@ npm run deploy-commands
 npm run dev
 ```
 
+> **One-time portal toggle**: in the Discord Developer Portal → Bot → Privileged Gateway Intents, enable **MESSAGE CONTENT INTENT**. Without it, the bot cannot read the text of users' replies and submissions silently fail.
+
 In the server:
 
 ```
@@ -41,11 +43,12 @@ Set with `/setup`. Run `/setup` with no options to view the current config.
 
 ## Commands
 
+Users **reply** to the bot's slot-prompt messages to submit — there is no `/fill` command. Each user can only submit once every 6h within a botluck (configurable).
+
 | command | who | what it does |
 |---|---|---|
 | `/setup [channel] [result_channel] [...]` | admin | configure channels and timing |
 | `/prime` | admin | open a modal to paste the template; schedules the spring |
-| `/fill slot value` | anyone | claim an announced, empty slot |
 | `/revoke slot` | admin | reopen a filled slot; the original filler is banned from re-taking it |
 | `/cancel` | admin | abort the active botluck |
 | `/status` | anyone | show the current state (ephemeral) |

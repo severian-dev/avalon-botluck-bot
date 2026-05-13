@@ -1,4 +1,4 @@
-import { EmbedBuilder, codeBlock } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import type { BotluckRow } from '../database/repositories/botluckRepo.js';
 import type { SlotRow } from '../database/repositories/slotRepo.js';
 
@@ -13,7 +13,7 @@ export function buildSpringAnnouncement(
   totalSlots: number,
 ): EmbedBuilder {
   const lines = [
-    `A new ${totalSlots}-slot botluck is being assembled. First come, first served — one slot per person.`,
+    `A new ${totalSlots}-slot botluck is being assembled. First reply wins each slot.`,
     `Once every slot is filled, your contributions will be assembled into a **character card**.`,
   ];
   if (botluck.theme) {
@@ -22,22 +22,21 @@ export function buildSpringAnnouncement(
   lines.push(
     '',
     `**First slot:** \`${firstSlot.slot_name}\``,
-    `Be the first to claim it with:`,
-    codeBlock(`/fill slot:${firstSlot.slot_name} value:"…"`),
+    `**Reply to this message** with your answer to claim it.`,
   );
 
   return new EmbedBuilder()
     .setColor(COLOR_RUNNING)
     .setTitle('🍲 A botluck has started!')
     .setDescription(lines.join('\n'))
-    .setFooter({ text: 'Each slot opens after the previous one is filled.' })
+    .setFooter({ text: 'One submission per 6 hours · each slot opens after the previous fill.' })
     .setTimestamp(new Date());
 }
 
 export function buildSlotAnnouncement(slot: SlotRow, theme: string | null): EmbedBuilder {
   const lines: string[] = [];
   if (theme) lines.push(`🎨 **Theme:** ${theme}`, '');
-  lines.push(`Be the first to claim it with:`, codeBlock(`/fill slot:${slot.slot_name} value:"…"`));
+  lines.push(`**Reply to this message** with your answer for \`${slot.slot_name}\`.`);
 
   return new EmbedBuilder()
     .setColor(COLOR_RUNNING)
@@ -57,14 +56,12 @@ export function buildFillAnnouncement(slot: SlotRow, fillerId: string): EmbedBui
 
 export function buildReminder(openSlots: SlotRow[], theme: string | null): EmbedBuilder {
   const names = openSlots.map((s) => `\`${s.slot_name}\``).join(', ');
-  const lead = openSlots[0];
   const lines: string[] = [];
   if (theme) lines.push(`🎨 **Theme:** ${theme}`, '');
   lines.push(
     openSlots.length === 1
-      ? `Still waiting on ${names} — first to claim wins.`
-      : `Still waiting on ${names} — first to claim each wins.`,
-    codeBlock(`/fill slot:${lead.slot_name} value:"…"`),
+      ? `Still waiting on ${names} — reply to its prompt above to claim it.`
+      : `Still waiting on ${names} — reply to each prompt above to claim them.`,
   );
   return new EmbedBuilder()
     .setColor(COLOR_RUNNING)

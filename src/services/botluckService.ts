@@ -4,6 +4,7 @@ import * as slotRepo from '../database/repositories/slotRepo.js';
 import * as banRepo from '../database/repositories/banRepo.js';
 import * as guildConfigRepo from '../database/repositories/guildConfigRepo.js';
 import { parseTemplate, renderTemplate } from './templateService.js';
+import { parseSqliteDateMs } from '../utils/sqliteDate.js';
 import type { BotluckRow } from '../database/repositories/botluckRepo.js';
 import type { SlotRow } from '../database/repositories/slotRepo.js';
 
@@ -112,54 +113,61 @@ export interface FillSuccess {
   nextAnnounceAt: Date | null;
 }
 
-export function fill(
+export type FillSkipReason =
+  | 'no_open_slot_for_reference'
+  | 'banned'
+  | 'on_cooldown'
+  | 'empty'
+  | 'too_long'
+  | 'race_lost';
+
+export type FillOutcome =
+  | { ok: true; result: FillSuccess }
+  | { ok: false; reason: FillSkipReason };
+
+/**
+ * Submission entry point: a user replied to a slot-prompt message.
+ * Looks up the open slot by the replied-to message id, applies the 6h-per-user cooldown,
+ * and atomically claims the slot. Returns ok=false silently for any failure;
+ * the messageCreate handler treats all non-ok outcomes as "do nothing".
+ */
+export function fillByReply(
   db: Database.Database,
-  guildId: string,
+  refMessageId: string,
   userId: string,
-  slotName: string,
-  value: string,
-): FillSuccess {
-  const cfg = guildConfigRepo.get(db, guildId);
-  const botluck = botluckRepo.getActive(db, guildId);
-  if (!botluck) throw new BotluckError('No active botluck right now.', 'NO_ACTIVE');
-  if (botluck.state !== 'running') {
-    throw new BotluckError('The botluck has not started yet.', 'NOT_RUNNING');
+  rawValue: string,
+): FillOutcome {
+  const slot = slotRepo.findOpenByMessageRef(db, refMessageId);
+  if (!slot) return { ok: false, reason: 'no_open_slot_for_reference' };
+
+  const botluck = botluckRepo.getById(db, slot.botluck_id);
+  if (!botluck || botluck.state !== 'running') {
+    return { ok: false, reason: 'no_open_slot_for_reference' };
   }
 
-  const slot = slotRepo.getByName(db, botluck.id, slotName);
-  if (!slot) {
-    throw new BotluckError(`No slot named "${slotName}" in this botluck.`, 'UNKNOWN_SLOT');
-  }
-  const existingFill = slotRepo.findFillerInBotluck(db, botluck.id, userId);
-  if (existingFill) {
-    throw new BotluckError(
-      `You already filled slot "${existingFill.slot_name}" in this botluck.`,
-      'ONE_PER_BOTLUCK',
-    );
-  }
   if (banRepo.isBanned(db, botluck.id, slot.slot_index, userId)) {
-    throw new BotluckError(`You can no longer fill slot "${slotName}".`, 'BANNED');
-  }
-  if (slot.announced_at === null) {
-    throw new BotluckError(`Slot "${slotName}" hasn't opened yet.`, 'NOT_ANNOUNCED');
-  }
-  if (slot.filled_by !== null) {
-    throw new BotluckError(
-      `Slot "${slotName}" was already filled by <@${slot.filled_by}>.`,
-      'ALREADY_FILLED',
-    );
+    return { ok: false, reason: 'banned' };
   }
 
-  const trimmed = value.trim();
-  if (trimmed.length === 0) throw new BotluckError('Value cannot be empty.', 'EMPTY_VALUE');
-  if (trimmed.length > 500) throw new BotluckError('Value too long (max 500 chars).', 'TOO_LONG');
+  const cfg = guildConfigRepo.get(db, botluck.guild_id);
+  const lastFillIso = slotRepo.lastFillForUserInBotluck(db, botluck.id, userId);
+  if (lastFillIso !== null) {
+    const elapsedMs = nowMs() - parseSqliteDateMs(lastFillIso);
+    const cooldownMs = cfg.submission_cooldown_hours * 3600 * 1000;
+    if (elapsedMs < cooldownMs) return { ok: false, reason: 'on_cooldown' };
+  }
 
-  let result: FillSuccess | null = null;
+  const trimmed = rawValue.trim();
+  if (trimmed.length === 0) return { ok: false, reason: 'empty' };
+  if (trimmed.length > 500) return { ok: false, reason: 'too_long' };
+
+  let outcome: FillOutcome | null = null;
 
   const tx = db.transaction(() => {
     const claimed = slotRepo.fillIfOpen(db, botluck.id, slot.slot_index, userId, trimmed);
     if (!claimed) {
-      throw new BotluckError(`Someone else just claimed slot "${slotName}".`, 'RACE_LOST');
+      outcome = { ok: false, reason: 'race_lost' };
+      return;
     }
 
     const totalSlots = JSON.parse(botluck.slots_json).length as number;
@@ -176,65 +184,56 @@ export function fill(
       const assembled = renderTemplate(botluck.template, values);
       const updatedSlot = slotRepo.getByIndex(db, botluck.id, slot.slot_index)!;
       const updatedBotluck = botluckRepo.getById(db, botluck.id)!;
-      result = {
-        botluck: updatedBotluck,
-        slot: updatedSlot,
-        totalSlots,
-        filledCount,
-        isComplete: true,
-        assembledText: assembled,
-        nextSlot: null,
-        nextAnnounceAt: null,
+      outcome = {
+        ok: true,
+        result: {
+          botluck: updatedBotluck,
+          slot: updatedSlot,
+          totalSlots,
+          filledCount,
+          isComplete: true,
+          assembledText: assembled,
+          nextSlot: null,
+          nextAnnounceAt: null,
+        },
       };
       return;
     }
 
-    // Not complete. If there's a next slot to announce, schedule it.
     const slots = JSON.parse(botluck.slots_json) as string[];
-    let nextIndex: number | null = botluck.next_announce_index;
-
-    // Discover the lowest-index slot that hasn't been announced yet.
-    if (nextIndex === null || nextIndex >= slots.length) {
-      // All slots have been announced; just wait for fills (no schedule change).
+    const nextIndex = botluck.next_announce_index;
+    let nextSlotRow: SlotRow | null = null;
+    let at: Date | null = null;
+    if (nextIndex !== null && nextIndex < slots.length) {
+      const gap = randomGapSeconds(cfg.slot_gap_min_seconds, cfg.slot_gap_max_seconds);
+      at = new Date(nowMs() + gap * 1000);
+      botluckRepo.setNextAnnounce(db, botluck.id, nextIndex, at);
+      nextSlotRow = slotRepo.getByIndex(db, botluck.id, nextIndex);
+    } else {
       botluckRepo.setNextAnnounce(db, botluck.id, null, null);
-      const updatedSlot = slotRepo.getByIndex(db, botluck.id, slot.slot_index)!;
-      const updatedBotluck = botluckRepo.getById(db, botluck.id)!;
-      result = {
+    }
+
+    const updatedSlot = slotRepo.getByIndex(db, botluck.id, slot.slot_index)!;
+    const updatedBotluck = botluckRepo.getById(db, botluck.id)!;
+    outcome = {
+      ok: true,
+      result: {
         botluck: updatedBotluck,
         slot: updatedSlot,
         totalSlots,
         filledCount,
         isComplete: false,
         assembledText: null,
-        nextSlot: null,
-        nextAnnounceAt: null,
-      };
-      return;
-    }
-
-    const gap = randomGapSeconds(cfg.slot_gap_min_seconds, cfg.slot_gap_max_seconds);
-    const at = new Date(nowMs() + gap * 1000);
-    botluckRepo.setNextAnnounce(db, botluck.id, nextIndex, at);
-
-    const nextSlotRow = slotRepo.getByIndex(db, botluck.id, nextIndex);
-    const updatedSlot = slotRepo.getByIndex(db, botluck.id, slot.slot_index)!;
-    const updatedBotluck = botluckRepo.getById(db, botluck.id)!;
-    result = {
-      botluck: updatedBotluck,
-      slot: updatedSlot,
-      totalSlots,
-      filledCount,
-      isComplete: false,
-      assembledText: null,
-      nextSlot: nextSlotRow,
-      nextAnnounceAt: at,
+        nextSlot: nextSlotRow,
+        nextAnnounceAt: at,
+      },
     };
   });
 
   tx();
 
-  if (!result) throw new BotluckError('Fill transaction did not produce a result.', 'INTERNAL');
-  return result;
+  if (!outcome) return { ok: false, reason: 'race_lost' };
+  return outcome;
 }
 
 export interface AnnounceResult {
@@ -334,14 +333,14 @@ export function planRemindersDue(db: Database.Database, now: Date): ReminderPlan
     const openSlots = slotRepo.listOpen(db, botluck.id);
     if (openSlots.length === 0) continue;
 
-    const sprungAt = botluck.sprung_at ? new Date(botluck.sprung_at).getTime() : 0;
+    const sprungAt = botluck.sprung_at ? parseSqliteDateMs(botluck.sprung_at) : 0;
     const lastFillIso = slotRepo.lastFillAt(db, botluck.id);
-    const lastFillMs = lastFillIso ? new Date(lastFillIso).getTime() : 0;
+    const lastFillMs = lastFillIso ? parseSqliteDateMs(lastFillIso) : 0;
     const lastReminderMs = botluck.last_reminder_at
-      ? new Date(botluck.last_reminder_at).getTime()
+      ? parseSqliteDateMs(botluck.last_reminder_at)
       : 0;
     const lastChannelMs = botluck.last_channel_message_at
-      ? new Date(botluck.last_channel_message_at).getTime()
+      ? parseSqliteDateMs(botluck.last_channel_message_at)
       : 0;
 
     const referenceMs = Math.max(sprungAt, lastFillMs, lastReminderMs);

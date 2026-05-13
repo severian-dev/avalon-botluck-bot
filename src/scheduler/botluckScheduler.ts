@@ -2,6 +2,7 @@ import type { Client } from 'discord.js';
 import type Database from 'better-sqlite3';
 import * as botluckRepo from '../database/repositories/botluckRepo.js';
 import * as botluckService from '../services/botluckService.js';
+import * as slotRepo from '../database/repositories/slotRepo.js';
 import { sendToChannel } from '../services/channelService.js';
 import {
   buildReminder,
@@ -26,6 +27,8 @@ export async function performSpring(
     return false;
   }
   botluckService.commitSpring(db, botluckId, messageId);
+  // Slot 0's prompt is the spring message itself; mark it as such so replies match.
+  slotRepo.setAnnouncementMessageId(db, botluckId, 0, messageId);
   refreshPresence(client, db);
   return true;
 }
@@ -47,10 +50,12 @@ async function runAnnounceTick(client: Client, db: Database.Database): Promise<v
     try {
       const plan = botluckService.announceNextPlan(db, row.id);
       if (!plan) continue;
-      await sendToChannel(client, plan.botluck.spawn_channel_id, {
+      const messageId = await sendToChannel(client, plan.botluck.spawn_channel_id, {
         embeds: [buildSlotAnnouncement(plan.slot, plan.botluck.theme)],
       });
+      if (!messageId) continue;
       botluckService.commitAnnounce(db, plan.botluck.id, plan.slot.slot_index);
+      slotRepo.setAnnouncementMessageId(db, plan.botluck.id, plan.slot.slot_index, messageId);
     } catch (err) {
       console.error(`Announce tick error for botluck ${row.id}:`, err);
     }

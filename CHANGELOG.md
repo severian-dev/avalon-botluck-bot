@@ -25,3 +25,15 @@ All notable changes to this project will be documented in this file. Format foll
 - Bot now reminds the channel when no slot has been filled for 5 minutes (configurable via `reminder_after_seconds`) and the channel has had non-bot activity since the last progress. Set to `0` to disable.
 - Bot's Discord presence reflects state: green "Playing /prime to start a botluck" when idle, idle "Watching 🥣 primed — waiting to spring" when primed, green "Playing 🍲 a botluck (slots open)" when running.
 - `npm run reset-db` script — deletes the SQLite file and its WAL sidecars; honours `DATABASE_PATH`.
+
+### Changed (breaking)
+
+- **Submission mechanic is now reply-based.** Users submit by replying to the bot's slot-prompt messages in the spawn channel. Successful replies are parroted back to the channel; invalid replies (cooldown, banned, race-lost, empty, unrelated) are silently ignored.
+- **`/fill` command removed.** Run `npm run deploy-commands` after upgrading to drop it from Discord.
+- **"One slot per user per botluck" rule replaced with a 6h cooldown** (configurable via `submission_cooldown_hours` on `/setup`; `0` disables). A user can now win multiple slots over the course of a botluck, just rate-limited.
+- Bot now requires the **MESSAGE_CONTENT** privileged gateway intent. Enable it in the Developer Portal before restarting.
+- On startup, the bot re-announces any currently-open slot lacking a stored announcement message id. This is the migration path for botlucks that were primed/sprung under the old `/fill`-based model — they keep working under the reply-based flow without manual intervention.
+
+### Fixed
+
+- Cooldown and reminder math now correctly interpret SQLite-emitted timestamps as UTC regardless of host timezone (previously off by the TZ offset on non-UTC hosts).

@@ -1,7 +1,6 @@
 import type { BotClient, Command } from '../client.js';
 import * as setup from './setup.js';
 import * as prime from './prime.js';
-import * as fill from './fill.js';
 import * as revoke from './revoke.js';
 import * as cancel from './cancel.js';
 import * as status from './status.js';
@@ -10,7 +9,6 @@ import * as testSpring from './test-spring.js';
 const commands: Command[] = [
   setup,
   prime,
-  fill,
   revoke,
   cancel,
   status,
