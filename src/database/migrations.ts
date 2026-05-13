@@ -57,9 +57,8 @@ export function runMigrations(db: Database.Database): void {
       filled_at               TEXT,
       PRIMARY KEY (botluck_id, slot_index)
     );
-
-    CREATE INDEX IF NOT EXISTS idx_botluck_slots_announcement_msg
-      ON botluck_slots(announcement_message_id) WHERE announcement_message_id IS NOT NULL;
+    -- Index for botluck_slots.announcement_message_id is created below, AFTER
+    -- ensureColumn has had a chance to ALTER it onto pre-existing tables.
 
     CREATE INDEX IF NOT EXISTS idx_botluck_slots_name
       ON botluck_slots(botluck_id, slot_name);
