@@ -45,7 +45,16 @@ export function buildSlotAnnouncement(slot: SlotRow, theme: string | null): Embe
     .setTimestamp(new Date());
 }
 
-export function buildFillAnnouncement(slot: SlotRow, fillerId: string): EmbedBuilder {
+export function buildFillAnnouncement(
+  slot: SlotRow,
+  fillerId: string,
+  blind: boolean,
+): EmbedBuilder {
+  if (blind) {
+    return new EmbedBuilder()
+      .setColor(COLOR_RUNNING)
+      .setDescription(`✅ Slot \`${slot.slot_name}\` filled by <@${fillerId}> (blind — value hidden).`);
+  }
   const value = slot.value ?? '';
   return new EmbedBuilder()
     .setColor(COLOR_RUNNING)
@@ -88,13 +97,20 @@ export function buildCancellation(): EmbedBuilder {
 }
 
 export function buildStatus(botluck: BotluckRow, slots: SlotRow[]): EmbedBuilder {
+  const blind = botluck.blind === 1;
   const filled = slots.filter((s) => s.filled_by !== null).length;
   const lines: string[] = [];
   if (botluck.theme) lines.push(`🎨 **Theme:** ${botluck.theme}`, '');
+  if (blind) lines.push('🕶️ **Blind mode** — submitted values are hidden until reveal.', '');
   for (const s of slots) {
-    if (s.filled_by) lines.push(`✅ \`${s.slot_name}\` — <@${s.filled_by}>: ${truncate(s.value ?? '', 100)}`);
-    else if (s.announced_at) lines.push(`⏳ \`${s.slot_name}\` — open`);
-    else lines.push(`🔒 \`${s.slot_name}\` — not yet open`);
+    if (s.filled_by) {
+      const valuePart = blind ? '' : `: ${truncate(s.value ?? '', 100)}`;
+      lines.push(`✅ \`${s.slot_name}\` — <@${s.filled_by}>${valuePart}`);
+    } else if (s.announced_at) {
+      lines.push(`⏳ \`${s.slot_name}\` — open`);
+    } else {
+      lines.push(`🔒 \`${s.slot_name}\` — not yet open`);
+    }
   }
   const color = botluck.state === 'primed' ? COLOR_PRIMED : COLOR_RUNNING;
   const title =
@@ -111,6 +127,27 @@ export function buildStatus(botluck: BotluckRow, slots: SlotRow[]): EmbedBuilder
           ? `Primed by ${botluck.primed_by} · springs ${botluck.spring_at}`
           : `Primed by ${botluck.primed_by}`,
     });
+}
+
+export function buildAdminView(botluck: BotluckRow, slots: SlotRow[]): EmbedBuilder {
+  const blind = botluck.blind === 1;
+  const lines: string[] = [];
+  if (botluck.theme) lines.push(`🎨 **Theme:** ${botluck.theme}`, '');
+  if (blind) lines.push('🕶️ Blind mode (values normally hidden — this is the admin reveal).', '');
+  for (const s of slots) {
+    if (s.filled_by) {
+      lines.push(`✅ \`${s.slot_name}\` — <@${s.filled_by}>: ${truncate(s.value ?? '', 400)}`);
+    } else if (s.announced_at) {
+      lines.push(`⏳ \`${s.slot_name}\` — open (no submission yet)`);
+    } else {
+      lines.push(`🔒 \`${s.slot_name}\` — not yet open`);
+    }
+  }
+  const filled = slots.filter((s) => s.filled_by !== null).length;
+  return new EmbedBuilder()
+    .setColor(COLOR_RUNNING)
+    .setTitle(`🔍 Botluck contents (${filled}/${slots.length})`)
+    .setDescription(lines.join('\n'));
 }
 
 function truncate(s: string, n: number): string {

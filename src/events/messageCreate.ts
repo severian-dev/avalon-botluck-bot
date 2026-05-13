@@ -33,7 +33,13 @@ export async function execute(message: Message, db: Database.Database): Promise<
   if (!outcome.ok) return; // silently ignore — cooldown, banned, race, empty, unrelated reply
 
   await sendToChannel(message.client, outcome.result.botluck.spawn_channel_id, {
-    embeds: [buildFillAnnouncement(outcome.result.slot, message.author.id)],
+    embeds: [
+      buildFillAnnouncement(
+        outcome.result.slot,
+        message.author.id,
+        outcome.result.botluck.blind === 1,
+      ),
+    ],
   });
 
   if (outcome.result.isComplete && outcome.result.assembledText !== null) {

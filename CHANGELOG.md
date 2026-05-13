@@ -37,3 +37,9 @@ All notable changes to this project will be documented in this file. Format foll
 ### Fixed
 
 - Cooldown and reminder math now correctly interpret SQLite-emitted timestamps as UTC regardless of host timezone (previously off by the TZ offset on non-UTC hosts).
+
+### Added
+
+- **Blind botluck mode.** Optional toggle on the prime modal (type `yes` to enable). When on, the channel parrot only acknowledges "@user filled `slot`" without showing the value, and `/status` hides values too. `/view` and the final assembled card always reveal values.
+- **`/view` admin command.** Posts publicly in the current channel a list of every slot with its filler and submitted value, including for blind botlucks. The intended reveal mechanism.
+- **`admin_role` config** in `/setup`. A role that's treated as admin alongside `Manage Guild` for all admin commands (`/setup`, `/prime`, `/revoke`, `/cancel`, `/view`).

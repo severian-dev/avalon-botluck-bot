@@ -4,6 +4,7 @@ import * as prime from './prime.js';
 import * as revoke from './revoke.js';
 import * as cancel from './cancel.js';
 import * as status from './status.js';
+import * as view from './view.js';
 import * as testSpring from './test-spring.js';
 
 const commands: Command[] = [
@@ -12,6 +13,7 @@ const commands: Command[] = [
   revoke,
   cancel,
   status,
+  view,
   testSpring,
 ] as unknown as Command[];
 

@@ -5,8 +5,10 @@ import { BotluckError } from '../services/botluckService.js';
 import { TemplateParseError } from '../services/templateService.js';
 import { isAdmin } from '../services/permissionService.js';
 import { refreshPresence } from '../services/presenceService.js';
+import { parseBlindFlag } from '../builders/primeModal.js';
 import {
   PRIME_MODAL,
+  PRIME_MODAL_BLIND,
   PRIME_MODAL_TEMPLATE,
   PRIME_MODAL_THEME,
 } from '../types/customIds.js';
@@ -20,14 +22,15 @@ export async function handle(
     await interaction.reply({ content: 'Use this in a server.', ephemeral: true });
     return true;
   }
-  if (!isAdmin(interaction)) {
-    await interaction.reply({ content: '⛔ Manage Guild permission required.', ephemeral: true });
+  if (!isAdmin(interaction, db)) {
+    await interaction.reply({ content: '⛔ Admin permission required.', ephemeral: true });
     return true;
   }
 
   const raw = interaction.fields.getTextInputValue(PRIME_MODAL_TEMPLATE);
   const themeRaw = interaction.fields.getTextInputValue(PRIME_MODAL_THEME);
   const theme = themeRaw.trim().length > 0 ? themeRaw.trim() : null;
+  const blind = parseBlindFlag(interaction.fields.getTextInputValue(PRIME_MODAL_BLIND));
 
   try {
     const botluck = botluckService.prime(
@@ -36,13 +39,14 @@ export async function handle(
       interaction.user.id,
       raw,
       theme,
+      blind,
     );
     const slots = JSON.parse(botluck.slots_json) as string[];
     const springAt = new Date(botluck.spring_at);
     const unix = Math.floor(springAt.getTime() / 1000);
     await interaction.reply({
       content:
-        `✅ Botluck primed with ${slots.length} slot(s): \`${slots.join('`, `')}\`\n` +
+        `✅ Botluck primed${blind ? ' **(blind mode)**' : ''} with ${slots.length} slot(s): \`${slots.join('`, `')}\`\n` +
         `It will spring <t:${unix}:R> in <#${botluck.spawn_channel_id}>.`,
       ephemeral: true,
       allowedMentions: { parse: [] },

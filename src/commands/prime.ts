@@ -20,7 +20,7 @@ export async function execute(
   db: Database.Database,
 ): Promise<void> {
   if (!interaction.guildId) return;
-  if (!isAdmin(interaction)) {
+  if (!isAdmin(interaction, db)) {
     await interaction.reply({ content: '⛔ Manage Guild permission required.', ephemeral: true });
     return;
   }

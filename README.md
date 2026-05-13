@@ -47,12 +47,17 @@ Users **reply** to the bot's slot-prompt messages to submit — there is no `/fi
 
 | command | who | what it does |
 |---|---|---|
-| `/setup [channel] [result_channel] [...]` | admin | configure channels and timing |
-| `/prime` | admin | open a modal to paste the template; schedules the spring |
+| `/setup [channel] [result_channel] [admin_role] [...]` | admin | configure channels, timing, and the admin role |
+| `/prime` | admin | open a modal to paste the template (theme, blind toggle); schedules the spring |
 | `/revoke slot` | admin | reopen a filled slot; the original filler is banned from re-taking it |
 | `/cancel` | admin | abort the active botluck |
-| `/status` | anyone | show the current state (ephemeral) |
+| `/view` | admin | post a public list of every slot, its submitter, and its value (the blind-reveal tool) |
+| `/status` | anyone | show the current state (ephemeral; respects blind mode) |
 | `/test-spring` | owner | spring the primed botluck immediately, bypassing the delay (testing only) |
+
+**Blind mode.** Type `yes` in the third field of the `/prime` modal to enable. With blind on, the channel acknowledgement reads "✅ Slot X filled by @user" without revealing the submitted value, and `/status` shows submitters but not values. The final assembled character card and `/view` always reveal everything.
+
+**Admin role.** Defaults to anyone with `Manage Guild`. Set a custom role via `/setup admin_role:@Mods` to grant admin command access to that role too.
 
 ## Template syntax
 

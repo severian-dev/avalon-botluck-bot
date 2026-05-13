@@ -9,6 +9,7 @@ export interface GuildConfigRow {
   slot_gap_max_seconds: number;
   reminder_after_seconds: number;
   submission_cooldown_hours: number;
+  admin_role_id: string | null;
 }
 
 export const ALLOWED_KEYS = [
@@ -19,6 +20,7 @@ export const ALLOWED_KEYS = [
   'slot_gap_max_seconds',
   'reminder_after_seconds',
   'submission_cooldown_hours',
+  'admin_role_id',
 ] as const;
 
 export type ConfigKey = (typeof ALLOWED_KEYS)[number];

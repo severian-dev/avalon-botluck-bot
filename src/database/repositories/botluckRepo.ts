@@ -22,6 +22,7 @@ export interface BotluckRow {
   theme: string | null;
   last_reminder_at: string | null;
   last_channel_message_at: string | null;
+  blind: number;
 }
 
 export interface CreateBotluckInput {
@@ -33,6 +34,7 @@ export interface CreateBotluckInput {
   primedBy: string;
   springAt: Date;
   theme: string | null;
+  blind: boolean;
 }
 
 export function getActive(db: Database.Database, guildId: string): BotluckRow | null {
@@ -56,8 +58,8 @@ export function create(db: Database.Database, input: CreateBotluckInput): Botluc
     INSERT INTO botlucks (
       guild_id, state, template, slots_json,
       spawn_channel_id, result_channel_id,
-      primed_by, spring_at, next_announce_index, next_announce_at, theme
-    ) VALUES (?, 'primed', ?, ?, ?, ?, ?, ?, 0, NULL, ?)
+      primed_by, spring_at, next_announce_index, next_announce_at, theme, blind
+    ) VALUES (?, 'primed', ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?)
   `);
   const result = insert.run(
     input.guildId,
@@ -68,6 +70,7 @@ export function create(db: Database.Database, input: CreateBotluckInput): Botluc
     input.primedBy,
     input.springAt.toISOString(),
     input.theme,
+    input.blind ? 1 : 0,
   );
   const id = Number(result.lastInsertRowid);
 

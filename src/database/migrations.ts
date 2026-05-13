@@ -10,7 +10,8 @@ export function runMigrations(db: Database.Database): void {
       slot_gap_min_seconds        INTEGER NOT NULL DEFAULT 15,
       slot_gap_max_seconds        INTEGER NOT NULL DEFAULT 30,
       reminder_after_seconds      INTEGER NOT NULL DEFAULT 300,
-      submission_cooldown_hours   INTEGER NOT NULL DEFAULT 6
+      submission_cooldown_hours   INTEGER NOT NULL DEFAULT 6,
+      admin_role_id               TEXT
     );
 
     CREATE TABLE IF NOT EXISTS botlucks (
@@ -32,7 +33,8 @@ export function runMigrations(db: Database.Database): void {
       cancelled_at             TEXT,
       theme                    TEXT,
       last_reminder_at         TEXT,
-      last_channel_message_at  TEXT
+      last_channel_message_at  TEXT,
+      blind                    INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS uq_botlucks_active_per_guild
@@ -76,7 +78,9 @@ export function runMigrations(db: Database.Database): void {
   ensureColumn(db, 'botlucks', 'last_channel_message_at', 'TEXT');
   ensureColumn(db, 'guild_config', 'reminder_after_seconds', 'INTEGER NOT NULL DEFAULT 300');
   ensureColumn(db, 'guild_config', 'submission_cooldown_hours', 'INTEGER NOT NULL DEFAULT 6');
+  ensureColumn(db, 'guild_config', 'admin_role_id', 'TEXT');
   ensureColumn(db, 'botluck_slots', 'announcement_message_id', 'TEXT');
+  ensureColumn(db, 'botlucks', 'blind', 'INTEGER NOT NULL DEFAULT 0');
   db.exec(
     `CREATE INDEX IF NOT EXISTS idx_botluck_slots_announcement_msg
        ON botluck_slots(announcement_message_id) WHERE announcement_message_id IS NOT NULL`,

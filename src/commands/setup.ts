@@ -65,6 +65,12 @@ export const data = new SlashCommandBuilder()
       .setMaxValue(720)
       .setRequired(false),
   )
+  .addRoleOption((o) =>
+    o
+      .setName('admin_role')
+      .setDescription('Role treated as admin in addition to Manage Guild (for /setup, /prime, /view, etc.)')
+      .setRequired(false),
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
   .setDMPermission(false);
 
@@ -73,7 +79,7 @@ export async function execute(
   db: Database.Database,
 ): Promise<void> {
   if (!interaction.guildId) return;
-  if (!isAdmin(interaction)) {
+  if (!isAdmin(interaction, db)) {
     await interaction.reply({ content: '⛔ Manage Guild permission required.', ephemeral: true });
     return;
   }
@@ -122,6 +128,12 @@ export async function execute(
     updates.push(`submission_cooldown_hours = ${cooldownHours}`);
   }
 
+  const adminRole = interaction.options.getRole('admin_role');
+  if (adminRole) {
+    guildConfigRepo.set(db, interaction.guildId, 'admin_role_id', adminRole.id);
+    updates.push(`admin_role = <@&${adminRole.id}>`);
+  }
+
   if (updates.length === 0) {
     const cfg = guildConfigRepo.get(db, interaction.guildId);
     const reminderLine =
@@ -137,6 +149,7 @@ export async function execute(
         '**Current configuration**\n' +
         `• spawn channel: ${cfg.spawn_channel_id ? `<#${cfg.spawn_channel_id}>` : '_unset_'}\n` +
         `• result channel: ${cfg.result_channel_id ? `<#${cfg.result_channel_id}>` : '_falls back to spawn_'}\n` +
+        `• admin role: ${cfg.admin_role_id ? `<@&${cfg.admin_role_id}>` : '_Manage Guild only_'}\n` +
         `• spring delay: ${cfg.spring_delay_hours}h\n` +
         `• slot gap: ${cfg.slot_gap_min_seconds}–${cfg.slot_gap_max_seconds}s\n` +
         `• reminder: ${reminderLine}\n` +

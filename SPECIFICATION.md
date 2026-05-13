@@ -86,6 +86,7 @@ Stored in `guild_config`:
 | `slot_gap_max_seconds` | `30` | maximum gap between slot prompts |
 | `reminder_after_seconds` | `300` | when an announced slot has been open this long since the last progress AND the channel had non-bot activity, the bot posts a reminder. `0` disables. |
 | `submission_cooldown_hours` | `6` | minimum hours between any two submissions by the same user in a botluck. `0` disables. |
+| `admin_role_id` | _unset_ | optional role id treated as admin alongside `Manage Guild`. Affects `/setup`, `/prime`, `/revoke`, `/cancel`, `/view`. |
 
 All set via `/setup`. Calling `/setup` with no options shows the current configuration.
 
@@ -93,11 +94,12 @@ All set via `/setup`. Calling `/setup` with no options shows the current configu
 
 | command | who | purpose |
 |---------|-----|---------|
-| `/setup` | admin | configure channels and timing |
-| `/prime` | admin | open the modal to paste a template; stores it and schedules the spring |
+| `/setup` | admin | configure channels, timing, admin role |
+| `/prime` | admin | open the modal (template + optional theme + optional blind toggle); stores it and schedules the spring |
 | `/revoke slot` | admin | reopen a filled slot, banning the original filler from it |
 | `/cancel` | admin | abort the active botluck |
-| `/status` | anyone | show the current botluck state (ephemeral) |
+| `/view` | admin | post a public list of every slot with submitter and value (the blind-reveal mechanism) |
+| `/status` | anyone | show the current botluck state (ephemeral; respects blind mode) |
 
 There is no `/fill` command. Users submit by **replying** to the bot's slot-prompt messages in the spawn channel.
 
@@ -128,6 +130,7 @@ One row per botluck. The active row (if any) is the one with `state IN ('primed'
 | `completed_at` | TEXT NULL | |
 | `cancelled_at` | TEXT NULL | |
 | `theme` | TEXT NULL | optional theme provided at prime time; shown on the spring + slot announcements |
+| `blind` | INTEGER NOT NULL DEFAULT 0 | `1` hides submitted values in the channel parrot and `/status`. `/view` and the final card always reveal. |
 
 ### `botluck_slots`
 One row per slot per botluck.
