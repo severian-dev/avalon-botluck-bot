@@ -3,6 +3,7 @@ import type Database from 'better-sqlite3';
 import * as botluckRepo from '../database/repositories/botluckRepo.js';
 import * as botluckService from '../services/botluckService.js';
 import * as slotRepo from '../database/repositories/slotRepo.js';
+import * as anchorRepo from '../database/repositories/anchorRepo.js';
 import { sendToChannel } from '../services/channelService.js';
 import {
   buildReminder,
@@ -67,10 +68,16 @@ async function runReminderTick(client: Client, db: Database.Database): Promise<v
   const plans = botluckService.planRemindersDue(db, now);
   for (const plan of plans) {
     try {
-      const sent = await sendToChannel(client, plan.botluck.spawn_channel_id, {
+      const messageId = await sendToChannel(client, plan.botluck.spawn_channel_id, {
         embeds: [buildReminder(plan.openSlots, plan.botluck.theme)],
       });
-      if (sent) botluckRepo.stampReminder(db, plan.botluck.id, now);
+      if (messageId) {
+        botluckRepo.stampReminder(db, plan.botluck.id, now);
+        // Route replies to the reminder into the most-recently-announced open slot,
+        // without overwriting that slot's primary announcement_message_id.
+        const target = plan.openSlots[plan.openSlots.length - 1];
+        anchorRepo.add(db, plan.botluck.id, target.slot_index, messageId);
+      }
     } catch (err) {
       console.error(`Reminder tick error for botluck ${plan.botluck.id}:`, err);
     }

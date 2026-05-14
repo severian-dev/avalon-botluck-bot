@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import * as anchorRepo from './anchorRepo.js';
 
 export interface SlotRow {
   botluck_id: number;
@@ -66,6 +67,8 @@ export function setAnnouncementMessageId(
   db.prepare(
     `UPDATE botluck_slots SET announcement_message_id = ? WHERE botluck_id = ? AND slot_index = ?`,
   ).run(messageId, botluckId, slotIndex);
+  // Also record as an anchor so future replies to this message id route here.
+  anchorRepo.add(db, botluckId, slotIndex, messageId);
 }
 
 export interface SlotWithBotluckId extends SlotRow {
@@ -76,17 +79,7 @@ export function findOpenByMessageRef(
   db: Database.Database,
   messageId: string,
 ): SlotWithBotluckId | null {
-  return (
-    db
-      .prepare<[string], SlotWithBotluckId>(
-        `SELECT s.*, b.guild_id AS guild_id FROM botluck_slots s
-           JOIN botlucks b ON b.id = s.botluck_id
-          WHERE s.announcement_message_id = ?
-            AND s.filled_by IS NULL
-            AND b.state = 'running'`,
-      )
-      .get(messageId) ?? null
-  );
+  return anchorRepo.findOpenByAnchor(db, messageId);
 }
 
 export function lastFillForUserInBotluck(

@@ -12,6 +12,16 @@ import { refreshPresence } from '../services/presenceService.js';
 
 export const name = 'messageCreate';
 
+function formatRemaining(ms: number): string {
+  const totalMinutes = Math.ceil(ms / 60_000);
+  if (totalMinutes < 1) return 'less than a minute';
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export async function execute(message: Message, db: Database.Database): Promise<void> {
   if (!message.guildId) return;
   if (message.author.bot) return;
@@ -30,7 +40,17 @@ export async function execute(message: Message, db: Database.Database): Promise<
   if (!refId) return;
 
   const outcome = botluckService.fillByReply(db, refId, message.author.id, message.content);
-  if (!outcome.ok) return; // silently ignore — cooldown, banned, race, empty, unrelated reply
+  if (!outcome.ok) {
+    if (outcome.reason === 'on_cooldown') {
+      await message
+        .reply({
+          content: `⏳ You're on cooldown — try again in ${formatRemaining(outcome.remainingMs)}.`,
+          allowedMentions: { repliedUser: false },
+        })
+        .catch(() => {});
+    }
+    return; // silently ignore everything else
+  }
 
   await sendToChannel(message.client, outcome.result.botluck.spawn_channel_id, {
     embeds: [

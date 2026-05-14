@@ -125,7 +125,8 @@ export type FillSkipReason =
 
 export type FillOutcome =
   | { ok: true; result: FillSuccess }
-  | { ok: false; reason: FillSkipReason };
+  | { ok: false; reason: 'on_cooldown'; remainingMs: number }
+  | { ok: false; reason: Exclude<FillSkipReason, 'on_cooldown'> };
 
 /**
  * Submission entry point: a user replied to a slot-prompt message.
@@ -156,7 +157,9 @@ export function fillByReply(
   if (lastFillIso !== null) {
     const elapsedMs = nowMs() - parseSqliteDateMs(lastFillIso);
     const cooldownMs = cfg.submission_cooldown_hours * 3600 * 1000;
-    if (elapsedMs < cooldownMs) return { ok: false, reason: 'on_cooldown' };
+    if (elapsedMs < cooldownMs) {
+      return { ok: false, reason: 'on_cooldown', remainingMs: cooldownMs - elapsedMs };
+    }
   }
 
   const trimmed = rawValue.trim();

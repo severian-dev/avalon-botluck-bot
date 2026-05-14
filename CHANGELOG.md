@@ -44,3 +44,9 @@ All notable changes to this project will be documented in this file. Format foll
 - **`/view` admin command.** Posts publicly in the current channel a list of every slot with its filler and submitted value, including for blind botlucks. The intended reveal mechanism.
 - **`admin_role` config** in `/setup`. A role that's treated as admin alongside `Manage Guild` for all admin commands (`/setup`, `/prime`, `/revoke`, `/cancel`, `/view`).
 - **`/reannounce` admin command.** Re-posts the prompt for every currently-open slot. Also picks up any spawn/result channel change made via `/setup` since prime time. Use this if you deleted the bot's slot prompt or changed the spawn channel mid-botluck.
+- **Multiple reply anchors per slot.** Replies routed to a slot now match against any anchor for that slot — the original prompt, reminder messages, and `/reannounce` reposts. Users no longer have to find the original message to reply.
+- **Cooldown reply.** When a user replies during the 6h cooldown window, the bot now replies (no ping) telling them how much time remains. Other invalid replies (banned, race-lost, empty, unrelated) stay silent.
+
+### Schema
+
+- New `slot_anchors(message_id PRIMARY KEY, botluck_id, slot_index, created_at)` table for the many-to-one anchor lookup. Backfilled from existing `botluck_slots.announcement_message_id` on first migration so in-flight botlucks don't lose their anchor.

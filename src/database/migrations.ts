@@ -70,6 +70,16 @@ export function runMigrations(db: Database.Database): void {
       banned_at   TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (botluck_id, slot_index, user_id)
     );
+
+    CREATE TABLE IF NOT EXISTS slot_anchors (
+      message_id  TEXT PRIMARY KEY,
+      botluck_id  INTEGER NOT NULL REFERENCES botlucks(id) ON DELETE CASCADE,
+      slot_index  INTEGER NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_slot_anchors_botluck_slot
+      ON slot_anchors(botluck_id, slot_index);
   `);
 
   ensureColumn(db, 'botlucks', 'theme', 'TEXT');
@@ -83,6 +93,15 @@ export function runMigrations(db: Database.Database): void {
   db.exec(
     `CREATE INDEX IF NOT EXISTS idx_botluck_slots_announcement_msg
        ON botluck_slots(announcement_message_id) WHERE announcement_message_id IS NOT NULL`,
+  );
+
+  // Backfill slot_anchors from any pre-existing announcement_message_id values.
+  // Idempotent thanks to OR IGNORE on the PK; safe to run on every boot.
+  db.exec(
+    `INSERT OR IGNORE INTO slot_anchors (message_id, botluck_id, slot_index)
+       SELECT announcement_message_id, botluck_id, slot_index
+         FROM botluck_slots
+        WHERE announcement_message_id IS NOT NULL`,
   );
 }
 
