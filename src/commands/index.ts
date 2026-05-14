@@ -7,6 +7,7 @@ import * as status from './status.js';
 import * as view from './view.js';
 import * as reannounce from './reannounce.js';
 import * as testSpring from './test-spring.js';
+import * as lastResult from './last-result.js';
 
 const commands: Command[] = [
   setup,
@@ -17,6 +18,7 @@ const commands: Command[] = [
   view,
   reannounce,
   testSpring,
+  lastResult,
 ] as unknown as Command[];
 
 export async function loadCommands(client: BotClient): Promise<void> {

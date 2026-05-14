@@ -66,9 +66,11 @@ export async function execute(message: Message, db: Database.Database): Promise<
     await sendToChannel(message.client, outcome.result.botluck.spawn_channel_id, {
       embeds: [buildCompletionAnnouncement()],
     });
-    await sendToChannel(message.client, outcome.result.botluck.result_channel_id, {
-      content: buildAssembled(outcome.result.assembledText),
-    });
+    for (const embed of buildAssembled(outcome.result.assembledText)) {
+      await sendToChannel(message.client, outcome.result.botluck.result_channel_id, {
+        embeds: [embed],
+      });
+    }
     refreshPresence(message.client, db);
   }
 }

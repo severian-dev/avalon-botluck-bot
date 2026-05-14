@@ -85,8 +85,41 @@ export function buildCompletionAnnouncement(): EmbedBuilder {
     .setDescription('Posting the assembled result now…');
 }
 
-export function buildAssembled(text: string): string {
-  return `🍲 **Botluck served:**\n>>> ${text}`;
+// Discord caps embed.description at 4096 chars. We chunk under that and post
+// one embed per message so each message gets its own 6000-char budget; no
+// hard ceiling on total length.
+const ASSEMBLED_CHUNK_MAX = 4000;
+
+export function buildAssembled(text: string): EmbedBuilder[] {
+  const chunks = chunkAssembledText(text, ASSEMBLED_CHUNK_MAX);
+  const total = chunks.length;
+  return chunks.map((chunk, i) => {
+    const title = total === 1 ? '🍲 Botluck served' : `🍲 Botluck served (part ${i + 1}/${total})`;
+    return new EmbedBuilder().setColor(COLOR_COMPLETE).setTitle(title).setDescription(chunk);
+  });
+}
+
+function chunkAssembledText(text: string, maxLen: number): string[] {
+  if (text.length <= maxLen) return [text];
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > maxLen) {
+    let cut = -1;
+    // Prefer paragraph, then newline, then space — but only if the break point
+    // is past the halfway mark, otherwise we're wasting too much chunk budget.
+    for (const sep of ['\n\n', '\n', ' ']) {
+      const idx = remaining.lastIndexOf(sep, maxLen);
+      if (idx > maxLen / 2) {
+        cut = idx + sep.length;
+        break;
+      }
+    }
+    if (cut === -1) cut = maxLen;
+    chunks.push(remaining.slice(0, cut).trimEnd());
+    remaining = remaining.slice(cut);
+  }
+  if (remaining.length > 0) chunks.push(remaining);
+  return chunks;
 }
 
 export function buildCancellation(): EmbedBuilder {

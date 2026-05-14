@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file. Format foll
 - `/test-spring` (owner-only) — springs the currently primed botluck immediately, bypassing the spring delay. For testing only.
 - Optional `theme` field on the prime modal — shown on the spring announcement and on every "next slot" prompt as a reminder.
 - Spring announcement now mentions that the assembled result will become a character card.
+- `/last-result` admin command — re-renders and posts the most recent completed botluck's assembled text into the current channel. Use if the original auto-post to the result channel didn't land (network blip, channel permissions changed, etc.).
 
 ### Changed
 
@@ -36,6 +37,7 @@ All notable changes to this project will be documented in this file. Format foll
 
 ### Fixed
 
+- Assembled botluck result now posts as one or more embeds (one per message) instead of raw `content`, removing the 2000-character hard ceiling. Previously, a botluck whose combined slot values + template ran longer than 2000 chars failed silently with Discord error 50035 (`Invalid Form Body / content`) and never reached the result channel. The text is now chunked at ~4000-char paragraph/newline boundaries; titles read `🍲 Botluck served (part N/M)` when split. No upper bound — works at any size.
 - Cooldown and reminder math now correctly interpret SQLite-emitted timestamps as UTC regardless of host timezone (previously off by the TZ offset on non-UTC hosts).
 
 ### Added

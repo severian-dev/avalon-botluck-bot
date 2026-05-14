@@ -194,3 +194,16 @@ export function listRunning(db: Database.Database): BotluckRow[] {
     .prepare<[], BotluckRow>(`SELECT * FROM botlucks WHERE state = 'running'`)
     .all();
 }
+
+export function getLastCompleted(db: Database.Database, guildId: string): BotluckRow | null {
+  return (
+    db
+      .prepare<[string], BotluckRow>(
+        `SELECT * FROM botlucks
+         WHERE guild_id = ? AND state = 'complete'
+         ORDER BY completed_at DESC
+         LIMIT 1`,
+      )
+      .get(guildId) ?? null
+  );
+}

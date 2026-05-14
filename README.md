@@ -39,7 +39,7 @@ Then wait. When the bot springs, anyone can run `/fill slot:profession value:"dr
 | `slot_gap_min_seconds` | `15` | minimum gap between slot prompts |
 | `slot_gap_max_seconds` | `30` | maximum gap between slot prompts |
 
-Set with `/setup`. Run `/setup` with no options to view the current config.
+Set with `/setup`. **Run `/setup` with no options to view the current config** (it prints every value above plus the admin role and submission cooldown, ephemeral).
 
 ## Commands
 
@@ -53,6 +53,7 @@ Users **reply** to the bot's slot-prompt messages to submit — there is no `/fi
 | `/cancel` | admin | abort the active botluck |
 | `/view` | admin | post a public list of every slot, its submitter, and its value (the blind-reveal tool) |
 | `/reannounce` | admin | re-post the prompt for every open slot (also picks up channel changes from `/setup`); use after deleting the bot's prompt message or moving the spawn channel mid-botluck |
+| `/last-result` | admin | re-post the assembled text of the most recent **completed** botluck into the current channel; use if the original auto-post never landed in the result channel |
 | `/status` | anyone | show the current state (ephemeral; respects blind mode) |
 | `/test-spring` | owner | spring the primed botluck immediately, bypassing the delay (testing only) |
 
