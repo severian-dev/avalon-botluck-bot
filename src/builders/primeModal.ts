@@ -31,7 +31,7 @@ export function buildPrimeModal(): ModalBuilder {
 
   const blind = new TextInputBuilder()
     .setCustomId(PRIME_MODAL_BLIND)
-    .setLabel('Blind mode? yes/no — hides values until reveal')
+    .setLabel('Blind mode? hides values until reveal')
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('no (default) — type "yes" to hide submitted values')
     .setRequired(false)
