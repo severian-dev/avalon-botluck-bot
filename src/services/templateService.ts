@@ -1,7 +1,7 @@
 const SLOT_PATTERN = /\{([^{}]*)\}/g;
 const SLOT_NAME_RX = /^[A-Za-z][A-Za-z0-9_]*$/;
 const MAX_TEMPLATE_LENGTH = 4000;
-const MAX_SLOTS = 25;
+const MAX_SLOTS = 50;
 
 export interface ParsedTemplate {
   template: string;
